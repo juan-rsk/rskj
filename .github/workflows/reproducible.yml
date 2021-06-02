@@ -32,7 +32,8 @@ jobs:
         run: |
           echo ::set-output name=sha256sum::$(cat SHA256SUMS)
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=fatjar_name::$(ls | grep all)" 
+          echo "::set-output name=fatjar_name::$(echo *-all.jar)" 
+
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
