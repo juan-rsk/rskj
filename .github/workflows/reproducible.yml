@@ -1,0 +1,70 @@
+name: Reproducible build
+on: [pull_request]
+
+jobs:
+  jar-artifact-and-hash:
+    runs-on: ubuntu-20.04
+    container: 
+      image: openjdk:8-jdk-slim-buster
+    steps:
+      - name: Install packages
+        run: |
+          apt-get update -y && apt-get install -y git curl gnupg
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Verify files integrity
+        run: |
+          gpg --keyserver https://secchannel.rsk.co/release.asc --recv-keys 1A92D8942171AFA951A857365DECF4415E3B8FA4
+          gpg --verify --output SHA256SUMS SHA256SUMS.asc && sha256sum --check SHA256SUMS
+
+      - name: Build rskj
+        run: |
+          ./configure.sh && ./gradlew --no-daemon clean build -x test
+
+      - name: Calculate hashes      
+        working-directory: rskj-core/build/libs
+        run: sha256sum ${{ steps.vars.outputs.fatjar_name }}  > SHA256SUMS;
+
+      - name: Declare some variables
+        id: vars
+        working-directory: rskj-core/build/libs
+        run: |
+          echo ::set-output name=sha256sum::$(cat SHA256SUMS)
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          echo "::set-output name=fatjar_name::$(ls | grep all)" 
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.REPRODUCIBLE_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.REPRODUCIBLE_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.REPRODUCIBLE_AWS_REGION }}
+
+      - name: Install AWS CLI
+        run: |
+          apt-get update && apt-get install -y unzip curl python && \
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+          unzip awscliv2.zip && \
+          ./aws/install
+      
+      - name: Deploy artifacts to S3
+        run: |
+          aws s3 cp rskj-core/build/libs/SHA256SUMS s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ steps.vars.outputs.sha_short }}/ --acl public-read
+          aws s3 cp rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }} s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ steps.vars.outputs.sha_short }}/ --acl public-read
+
+      - name: Comment PR
+        uses: actions/github-script@0.3.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment = `Reproducible builds allow you to match our provided binary with the source code you \
+            find on the repository. As more people reproduce the code, the more sure you can be \
+            that the code has not been tampered with.
+
+            * **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ steps.vars.outputs.sha_short }}/${{ steps.vars.outputs.fatjar_name }}) \
+            and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ steps.vars.outputs.sha_short }}/SHA256SUMS)
+            * **Want to reproduce?**: Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/). Share your results with the rest of the community on this PR!
+            * **SHA256SUM**: \`${{ steps.vars.outputs.sha256sum }}\``
+            const { issue: { number: issue_number }, repo: { owner, repo }  } = context;
+            github.issues.createComment({ issue_number, owner, repo, body: comment });
