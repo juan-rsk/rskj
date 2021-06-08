@@ -22,18 +22,13 @@ jobs:
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
 
-      - name: Calculate hashes      
-        working-directory: rskj-core/build/libs
-        run: sha256sum ${{ steps.vars.outputs.fatjar_name }}  > SHA256SUMS;
-
-      - name: Declare some variables
+      - name: Set variable and SHA256SUMS file
         id: vars
         working-directory: rskj-core/build/libs
-        run: |
+        run: |       
+          echo "::set-output name=fatjar_name::$(echo *-all.jar)"
+          sha256sum $(echo *-all.jar)  > ./SHA256SUMS;
           echo ::set-output name=sha256sum::$(cat SHA256SUMS)
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=fatjar_name::$(echo *-all.jar)" 
-
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -51,8 +46,8 @@ jobs:
       
       - name: Deploy artifacts to S3
         run: |
-          aws s3 cp rskj-core/build/libs/SHA256SUMS s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ steps.vars.outputs.sha_short }}/ --acl public-read
-          aws s3 cp rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }} s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ steps.vars.outputs.sha_short }}/ --acl public-read
+          aws s3 cp rskj-core/build/libs/SHA256SUMS s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ github.sha }}/ --acl public-read
+          aws s3 cp rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }} s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ github.sha }}/ --acl public-read
 
       - name: Comment PR
         uses: actions/github-script@0.3.0
@@ -63,8 +58,8 @@ jobs:
             find on the repository. As more people reproduce the code, the more sure you can be \
             that the code has not been tampered with.
 
-            * **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ steps.vars.outputs.sha_short }}/${{ steps.vars.outputs.fatjar_name }}) \
-            and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ steps.vars.outputs.sha_short }}/SHA256SUMS)
+            * **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ github.sha }}/${{ steps.vars.outputs.fatjar_name }}) \
+            and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ github.sha }}/SHA256SUMS)
             * **Want to reproduce?**: Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/). Share your results with the rest of the community on this PR!
             * **SHA256SUM**: \`${{ steps.vars.outputs.sha256sum }}\``
             const { issue: { number: issue_number }, repo: { owner, repo }  } = context;
