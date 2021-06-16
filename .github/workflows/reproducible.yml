@@ -48,8 +48,6 @@ jobs:
   upload_artifacts_to_S3:
     needs: Build_jar
     runs-on: ubuntu-latest
-    container: 
-      image: amazon/aws-cli
     steps:
       - name: Setup AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
