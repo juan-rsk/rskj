@@ -34,8 +34,8 @@ jobs:
         working-directory: rskj-core/build/libs
         run: |       
           echo "::set-output name=fatjar_name::$(echo *-all.jar)"
-          sha256sum $(echo *-all.jar) | awk '{ print $1 }' > ./SHA256SUMS;
-          echo ::set-output name=sha256sum::$(cat SHA256SUMS)
+          sha256sum $(echo *-all.jar) > ./SHA256SUMS;
+          echo ::set-output name=sha256sum::$(cut -d " " -f 1 <SHA256SUMS)
       
       - name: Upload rskj-artifacts
         uses: actions/upload-artifact@v2
