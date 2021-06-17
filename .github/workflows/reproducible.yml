@@ -103,5 +103,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}     
         run: |
           hub release show ${{ github.event.release.tag_name }} > /tmp/body
-          echo " * **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ github.sha }}/${{ needs.build_jar.outputs.fatjar_name}})\ and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ github.sha }}/SHA256SUMS) " >> /tmp/body
+          echo "* **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ github.sha }}/${{ needs.build_jar.outputs.fatjar_name}})\ and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ github.sha }}/SHA256SUMS) " >> /tmp/body
           hub release edit -F /tmp/body ${{ github.event.release.tag_name }}
