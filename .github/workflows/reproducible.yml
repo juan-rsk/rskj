@@ -97,10 +97,24 @@ jobs:
           asset_path: ${HOME}/SHA256SUMS
           asset_name: SHA256SUMS
           asset_content_type: text/plain
- 
+
       - name: Edit prerelase Description
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}     
         run: |
-          curl --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
-          -X PATCH -H "Accept: application/vnd.github.v3+json" \
-          --url ${{ github.event.release.url }} \
-          -d '{"body":"##Insert changes here\n\nReproducible builds allow you to match our provided binary with the source code you find on the repository. As more people reproduce the code, the more sure you can be that the code has not been tampered with.\n\n* **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ github.sha }}/${{ needs.build_jar.outputs.fatjar_name}}) and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ github.sha }}/SHA256SUMS)\n* **Want to reproduce?**: Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/).\n* **SHA256SUM**: `${{ needs.build_jar.outputs.sha256sum }}`"}' 
+          hub release show ${{ github.event.release.tag_name }} > /tmp/body
+          echo "                                                             
+
+Reproducible builds allow you to match our provided binary with the source code you find on the repository. As more people reproduce the code, the more sure you can be that the code has not been tampered with.
+          
+* **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/\${{ github.sha }}/\${{ needs.build_jar.outputs.fatjar_name}})\ and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/\${{ github.sha }}/SHA256SUMS) 
+* **Want to reproduce?**: Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/). 
+* **SHA256SUM**: \`\${{ needs.build_jar.outputs.sha256sum }}\`" >> /tmp/body
+          hub release edit -F /tmp/body ${{ github.event.release.tag_name }}
+
+#      - name: Edit prerelase Description
+#        run: |
+#          curl --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+#          -X PATCH -H "Accept: application/vnd.github.v3+json" \
+#          --url ${{ github.event.release.url }} \
+#          -d '{"body":"##Insert changes here\n\nReproducible builds allow you to match our provided binary with the source code you find on the repository. As more people reproduce the code, the more sure you can be that the code has not been tampered with.\n\n* **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ github.sha }}/${{ needs.build_jar.outputs.fatjar_name}}) and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ github.sha }}/SHA256SUMS)\n* **Want to reproduce?**: Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/).\n* **SHA256SUM**: `${{ needs.build_jar.outputs.sha256sum }}`"}' 
