@@ -9,13 +9,12 @@ jobs:
     container: 
       image: openjdk:8-jdk-slim-buster
     outputs:
-          fatjar_name: ${{ steps.vars.outputs.fatjar_name }}
-          sha256sum: ${{ steps.vars.outputs.sha256sum }}
+      fatjar_name: ${{ steps.vars.outputs.fatjar_name }}
+      sha256sum: ${{ steps.vars.outputs.sha256sum }}
     steps:
       - name: Install packages
         run: |
           apt-get update -y && apt-get install -y git curl gnupg
-
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -23,18 +22,16 @@ jobs:
         run: |
           gpg --keyserver https://secchannel.rsk.co/release.asc --recv-keys 1A92D8942171AFA951A857365DECF4415E3B8FA4
           gpg --verify --output SHA256SUMS SHA256SUMS.asc && sha256sum --check SHA256SUMS
-
       - name: Build rskj
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
-
       - name: Set variable and SHA256SUMS file
         id: vars
         working-directory: rskj-core/build/libs
         run: |       
           echo "::set-output name=fatjar_name::$(echo *-all.jar)"
           sha256sum $(echo *-all.jar) > ./SHA256SUMS;
-          echo ::set-output name=sha256sum::$(cut -d " " -f 1 <SHA256SUMS)
+          echo "::set-output name=sha256sum::$(cut -d " " -f 1 <SHA256SUMS)"
       
       - name: Upload rskj-artifacts
         uses: actions/upload-artifact@v2
@@ -43,29 +40,6 @@ jobs:
           path: |
             rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }}
             rskj-core/build/libs/SHA256SUMS
-
-  upload_artifacts_to_S3:
-    needs: build_jar
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.REPRODUCIBLE_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.REPRODUCIBLE_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.REPRODUCIBLE_AWS_REGION }}
-      
-      - name: Download rskj-artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: rskj-artifacts
-          path: ${HOME}
-
-      - name: Upload artifacts to S3
-        working-directory: ${HOME}
-        run: |
-          aws s3 cp ./SHA256SUMS s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ github.sha }}/ --acl public-read
-          aws s3 cp ./${{ needs.build_jar.outputs.fatjar_name }} s3://${{ secrets.REPRODUCIBLE_S3_BUCKET }}/downloads/${{ github.sha }}/ --acl public-read
 
   upload_asset_to_prerelease:
     needs: build_jar
@@ -103,8 +77,15 @@ jobs:
 
       - name: Edit prerelase Description
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}     
+          TMP_FOLDER: /tmp
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          hub release show ${{ github.event.release.tag_name }} > /tmp/body
-          echo "* **Want the binary and sha256 sum:?**: Follow this [link for the reproducible](https://artifacts.rsk.co/downloads/${{ github.sha }}/${{ needs.build_jar.outputs.fatjar_name}})\ and this [link for the SHA256SUMS](https://artifacts.rsk.co/downloads/${{ github.sha }}/SHA256SUMS) " >> /tmp/body
-          hub release edit -F /tmp/body ${{ github.event.release.tag_name }}
+          hub release show ${{ github.event.release.tag_name }} > ${{ env.TMP_FOLDER }}/body
+          echo "" >> ${{ env.TMP_FOLDER }}/body  
+          echo "" >> ${{ env.TMP_FOLDER }}/body
+          echo "Reproducible builds allow you to match our provided binary with the source code you find on the repository. \
+          As more people reproduce the code, the more sure you can be that the code has not been tampered with." >> ${{ env.TMP_FOLDER }}/body
+          echo "" >> ${{ env.TMP_FOLDER }}/body
+          echo "* **Want to reproduce?**: Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/)." >> ${{ env.TMP_FOLDER }}/body 
+          echo "* **SHA256SUM**: \`${{ needs.build_jar.outputs.sha256sum }}\`" >> ${{ env.TMP_FOLDER }}/body          
+          hub release edit -F ${{ env.TMP_FOLDER }}/body ${{ github.event.release.tag_name }}
