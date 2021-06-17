@@ -81,11 +81,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           hub release show ${{ github.event.release.tag_name }} > ${{ env.TMP_FOLDER }}/body
-          echo "" >> ${{ env.TMP_FOLDER }}/body  
-          echo "" >> ${{ env.TMP_FOLDER }}/body
-          echo "Reproducible builds allow you to match our provided binary with the source code you find on the repository. \
-          As more people reproduce the code, the more sure you can be that the code has not been tampered with." >> ${{ env.TMP_FOLDER }}/body
-          echo "" >> ${{ env.TMP_FOLDER }}/body
-          echo "* **Want to reproduce?**: Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/)." >> ${{ env.TMP_FOLDER }}/body 
-          echo "* **SHA256SUM**: \`${{ needs.build_jar.outputs.sha256sum }}\`" >> ${{ env.TMP_FOLDER }}/body          
+          cat <<'EOF' >> ${{ env.TMP_FOLDER }}/body  
+          
+          Reproducible builds allow you to match our provided binary with the source
+          code you find on the repository. As more people reproduce the code, the more
+          sure you can be that the code has not been tampered with.
+          
+          - **Want to perform a reproducible build?** Follow this [guide](https://developers.rsk.co/rsk/node/reproducible/). 
+          - **SHA256SUM** `${{ needs.build_jar.outputs.sha256sum }}`
+          EOF
           hub release edit -F ${{ env.TMP_FOLDER }}/body ${{ github.event.release.tag_name }}
