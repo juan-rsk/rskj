@@ -11,10 +11,12 @@ jobs:
     outputs:
       fatjar_name: ${{ steps.vars.outputs.fatjar_name }}
       sha256sum: ${{ steps.vars.outputs.sha256sum }}
+
     steps:
       - name: Install packages
         run: |
           apt-get update -y && apt-get install -y git curl gnupg
+
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -22,9 +24,11 @@ jobs:
         run: |
           gpg --keyserver https://secchannel.rsk.co/release.asc --recv-keys 1A92D8942171AFA951A857365DECF4415E3B8FA4
           gpg --verify --output SHA256SUMS SHA256SUMS.asc && sha256sum --check SHA256SUMS
+
       - name: Build rskj
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
+
       - name: Set variable and SHA256SUMS file
         id: vars
         working-directory: rskj-core/build/libs
@@ -32,6 +36,7 @@ jobs:
           echo "::set-output name=fatjar_name::$(echo *-all.jar)"
           sha256sum $(echo *-all.jar) > ./SHA256SUMS;
           echo "::set-output name=sha256sum::$(cut -d " " -f 1 <SHA256SUMS)"
+          git rev-parse --abbrev-ref HEAD; git rev-parse --short HEAD
       
       - name: Upload rskj-artifacts
         uses: actions/upload-artifact@v2
