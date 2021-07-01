@@ -15,19 +15,24 @@ jobs:
       - name: Install packages
         run: |
           apt-get update -y && apt-get install -y git curl gnupg
+
       - name: Checkout code
-        uses: actions/checkout@v2
+        run: git clone --single-branch --depth 1 --branch reproducible_test https://github.com/alejandrod-iov/rskj.git /code/rskj
 
       - name: Verify files integrity
+        working-directory: /code/rskj
         run: |
           gpg --keyserver https://secchannel.rsk.co/release.asc --recv-keys 1A92D8942171AFA951A857365DECF4415E3B8FA4
           gpg --verify --output SHA256SUMS SHA256SUMS.asc && sha256sum --check SHA256SUMS
+
       - name: Build rskj
+        working-directory: /code/rskj
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
+
       - name: Set variable and SHA256SUMS file
         id: vars
-        working-directory: rskj-core/build/libs
+        working-directory: /code/rskj/rskj-core/build/libs
         run: |       
           echo "::set-output name=fatjar_name::$(echo *-all.jar)"
           sha256sum $(echo *-all.jar) > ./SHA256SUMS;
@@ -38,16 +43,13 @@ jobs:
         with:
           name: rskj-artifacts
           path: |
-            rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }}
-            rskj-core/build/libs/SHA256SUMS
+            /code/rskj/rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }}
+            /code/rskj/rskj-core/build/libs/SHA256SUMS
 
   upload_asset_to_prerelease:
     needs: build_jar
     runs-on: ubuntu-latest
     steps:
-
-      - name: Checkout code
-        uses: actions/checkout@v2
 
       - name: Download rskj-artifacts
         uses: actions/download-artifact@v2
