@@ -17,7 +17,7 @@ jobs:
           apt-get update -y && apt-get install -y git curl gnupg
 
       - name: Checkout code
-        run: git clone --single-branch --depth 1 --branch reproducible_test https://github.com/alejandrod-iov/rskj.git /code/rskj
+        run: git clone --single-branch --depth 1 --branch ${GITHUB_REF} https://github.com/alejandrod-iov/rskj.git /code/rskj
 
       - name: Verify files integrity
         working-directory: /code/rskj
@@ -50,6 +50,9 @@ jobs:
     needs: build_jar
     runs-on: ubuntu-latest
     steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Download rskj-artifacts
         uses: actions/download-artifact@v2
