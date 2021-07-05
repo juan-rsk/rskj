@@ -28,13 +28,14 @@ jobs:
       - name: Build rskj
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
-          echo "-----"
-          env
-          echo "-----"
-          sha256sum rskj-core/build/libs/*
-          echo "-----"
-          cat .git/config 
-
+          
+      - name: Export artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: rskj-native-container-${{ steps.vars.outputs.tag }}
+          path: rskj-core/build/libs/
+          if-no-files-found: error
+      
       - name: Set variable and SHA256SUMS file
         id: vars
         working-directory: rskj-core/build/libs
@@ -52,6 +53,7 @@ jobs:
           path: |
             rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }}
             rskj-core/build/libs/SHA256SUMS
+
   upload_asset_to_prerelease:
     needs: build_jar
     runs-on: ubuntu-latest
