@@ -28,7 +28,12 @@ jobs:
       - name: Build rskj
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
+          echo "-----"
+          env
+          echo "-----"
           sha256sum rskj-core/build/libs/*
+          echo "-----"
+          cat .git/config 
 
       - name: Set variable and SHA256SUMS file
         id: vars
