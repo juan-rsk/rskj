@@ -28,6 +28,7 @@ jobs:
       - name: Build rskj
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
+          sha256sum rskj-core/build/libs/*
 
       - name: Set variable and SHA256SUMS file
         id: vars
@@ -36,7 +37,8 @@ jobs:
           echo "::set-output name=fatjar_name::$(echo *-all.jar)"
           sha256sum $(echo *-all.jar) > ./SHA256SUMS;
           echo "::set-output name=sha256sum::$(cut -d " " -f 1 <SHA256SUMS)"
-          git rev-parse --abbrev-ref HEAD; git rev-parse --short HEAD
+          git rev-parse --abbrev-ref HEAD
+          git rev-parse --short HEAD
       
       - name: Upload rskj-artifacts
         uses: actions/upload-artifact@v2
