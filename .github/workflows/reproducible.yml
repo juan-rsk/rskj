@@ -16,6 +16,7 @@ jobs:
       - name: Install packages
         run: |
           apt-get update -y && apt-get install -y git curl gnupg
+
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -23,6 +24,7 @@ jobs:
         run: |
           gpg --keyserver https://secchannel.rsk.co/SUPPORT.asc --recv-keys 1DC9157991323D23FD37BAA7A6DBEAC640C5A14B
           gpg --verify --output SHA256SUMS SHA256SUMS.asc && sha256sum --check SHA256SUMS
+
       - name: Build rskj
         run: |
           ./configure.sh && ./gradlew --no-daemon clean build -x test
@@ -42,6 +44,7 @@ jobs:
           path: |
             rskj-core/build/libs/${{ steps.vars.outputs.fatjar_name }}
             rskj-core/build/libs/SHA256SUMS
+
   upload_asset_to_prerelease:
     needs: build_jar
     runs-on: ubuntu-latest
@@ -92,3 +95,32 @@ jobs:
           - **SHA256SUM** `${{ needs.build_jar.outputs.sha256sum }}`
           EOF
           hub release edit -F ${{ env.TMP_FOLDER }}/body ${{ github.event.release.tag_name }}
+
+  push_to_registry:
+    needs: build_jar
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download rskj-artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: rskj-artifacts
+          path: ~/rskj-artifacts
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push to Docker Hub
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          tags: juanrsk/rskj:latest
+          context: /home/runner/
+          file: ./docker-image/Dockerfile
+          push: true
