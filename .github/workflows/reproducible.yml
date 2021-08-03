@@ -124,7 +124,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           tags: juanrsk/rskj:latest
-          context: ./
+          context: /home/runner/
           file: ./docker-image/Dockerfile
           push: true
 
