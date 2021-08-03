@@ -4,7 +4,7 @@ RUN useradd -m rsk
 
 USER rsk
 
-COPY --chown=rsk:rsk ./rskj-artifacts /artifacts
+COPY --chown=rsk:rsk /home/runner/rskj-artifacts /artifacts
 
 WORKDIR /home/rsk
 
