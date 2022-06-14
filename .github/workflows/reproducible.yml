@@ -5,9 +5,9 @@ on:
 
 jobs:
   build_jar:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu
     container: 
-      image: openjdk:8-jdk-slim-buster
+      image: openjdk:11-jdk-slim-buster
     outputs:
       fatjar_name: ${{ steps.vars.outputs.fatjar_name }}
       sha256sum: ${{ steps.vars.outputs.sha256sum }}
@@ -125,7 +125,9 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v2
         with:
-          tags: rsksmart/rskj:latest
+          tags: 
+            - rsksmart/rskj:${{ github.event.release.tag_name }}
+            - rsksmart/rskj:latest
           context: ./
           file: ./docker-image/Dockerfile
           push: true
