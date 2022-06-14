@@ -65,7 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${HOME}/${{ needs.build_jar.outputs.fatjar_name }}
+          asset_path: ${{ needs.build_jar.outputs.fatjar_name }}
           asset_name: ${{ needs.build_jar.outputs.fatjar_name }}
           asset_content_type: application/octet-stream
 
@@ -75,7 +75,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${HOME}/SHA256SUMS
+          asset_path: SHA256SUMS
           asset_name: SHA256SUMS
           asset_content_type: text/plain
 
@@ -108,7 +108,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: rskj-artifacts
-          path: ${HOME}
+          path: rskj-artifacts
 
       - name: debug
         run: |
